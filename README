@@ -14,32 +14,150 @@
 # limitations under the License.
 
 
-ActsAsSvn
-=========
+HasVersioning
+=============
 
+This plugin adds version control to your's app models. It allows to:
+
+- keep track of all changes to selected models
+- collect many changes in a one changelist
+- keep track of object associations
+
+
+Install
+=======
+
+just copy this plugin to yourapp/vendor/plugins
+
+
+Requirements
+============
 
 requires  RAILS  >=  2.3.3
-( there're some differences in  belongs_to_association.rb between 2.3.2 and 2.3.3.  
-2.3.3 makes life simpler, and it newer, so I decided to write version compatible with it... )
+
+to install rails 2.3.3, you may run following command in your app directory:
+rake rails:freeze:edge RELEASE=2.3.3
 
 
-plugin wasn't tested with non-standard naming ( different than rails default table names, foreign keys, etc...)
+Example
+=======
+
+let say we have following objects in our app:
+
+---
+class User 
+  has_many :cars
+  has_many :dogs
+end
+
+class Car
+  has_one :engine
+  belong_to :user
+end
+
+class Engine
+  belongs_to :car
+end
+---
+
+to make those models use versioning, we need to add 'has_versioning' in class definition.
+this will allow to query about attributes of this object in the past.
+
+if we also need to remember history of  has_many :cars assocition, we need to pass :versioned => true
+argument
+
+---
+class User
+  has_versioning
+  has_many :cars, :versioned => true
+  has_many :dogs
+end
+
+class Car
+  belong_to :user, :versioned => true
+  has_one :engine, :versioned => true
+end
+
+class Engine
+  has_versioning
+  belong_to :car, :versioned => true
+end
+---
+
+
+now, following magic works:
+
+user = User.new
+new_cl = Changelist.record!('added new user') do
+  user.name = 'kkurach'
+  user.save!
+end
+
+user.version            #  => 1
+user.name = 'nickesk'
+user.save!              # changelist autocreated
+user.version            # => 2
+
+user.at_changelist(new_cl.id).name  # => 'kkurach'
+user.at_version(1).name             # => 'kkurach'
+
+c1 = Car.create(:color => 'red')   
+c2 = Car.create(:color => 'blue')
+
+cl_add1 = Changelist.record! { u.cars << c1 }
+cl_add2 = Changelist.record! { u.cars << c2 }
+
+
+user.cars                                       # => [c1, c2]
+user.cars.count                                 # => 2 
+user.at_changelist(cl_add1.id).cars             # => [c1]
+user.at_changelist(cl_add1.id).cars.count       # => 1
+
+user.at_changelist(cl_add2.id).cars.find(:all, 
+  :conditions => { :color => 'blue}  )          # => [c2]
+
+
+cl_engine = Changelist.record!('engine added') do
+  c1.engine = Engine.create(:power => 123)
+end
+
+c1.engine.power = 444
+
+user.cars.first.engine.power                         # => 444
+
+user.at_changelist(cl_engine.id+1).cars.
+    first.engine.power                               # => 444
+
+user.at_changelist(cl_engine.id+1).cars.
+    first.at_changelist(cl_engine.id).engine.power   # => 123
+
+
+
+################ END OF EXAMPLE ##########################
+
+
+Limitations
+=======
+
+1. plugin wasn't tested with non-standard naming ( different than rails default table names, foreign keys, etc...)
 so most probably it won't work in this case.  
 
+2. it doesn't work with has_many :through and has_one :through (yet )
+
+3. 
 queries which includes id field in conditions are forbidden after at_changelist(cl).
 so, for example this query will give wrong output:
 
 User.find_by_name('karol').at_changelist(5).cars.find(:all, :conditions => { :id => 4..10 } )
 
 but this is ok:
+
 User.find_by_name('karol').at_changelist(5).cars.find(:all, :conditions => { :color => 'red' })
 
 only conditions with primary key after at_changelist are BAD
 
-
-Example
-=======
-
+4. it will never work with has_and_belongs_to_many (or it will be hard and dirty), 
+because it's impossible to set a callback on table in database. we need a model...
 
 
 

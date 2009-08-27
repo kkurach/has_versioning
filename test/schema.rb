@@ -102,45 +102,5 @@ ActiveRecord::Schema.define(:version => 1) do
   Circle.create_versioned_table(:force => true)
   Rectangle.create_versioned_table(:force => true)
 
-
-  # HAS MANY THROUGH
-  
-  create_table :writers, :force => true do |t|
-    t.string :name
-    t.integer :version
-  end
-  
-  Writer.create_versioned_table(:force => true)
-  
-  create_table :pen_writers, :force => true do |t|
-    t.integer :pen_id
-    t.integer :writer_id
-    t.integer :version
-  end
-  
-  PenWriter.create_versioned_table(:force => true)
-
-  create_table :pens, :force => true do |t|
-    t.string :color
-    t.integer :version
-  end
-
-  Pen.create_versioned_table(:force => true)
-
-  create_table :pen_refills, :force => true do |t|
-    t.integer :pen_id
-    t.integer :refill_id
-    t.integer :version
-  end
-  
-  PenRefill.create_versioned_table(:force => true)
-
-  create_table :refills, :force => true do |t|
-    t.string :brand
-    t.integer :version
-  end
-  
-  Refill.create_versioned_table(:force => true)
-
 end
 
