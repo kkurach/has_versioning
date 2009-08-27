@@ -1,0 +1,97 @@
+# Copyright 2009 Google Inc.
+# Original author: Karol Kurach <kkurach (at) gmail (dot) com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#      http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+Design:
+
+///////////Models added by plugin /////////////////
+
+Changelist
+    who              : string  // who made the change
+    desc             : string  // description - why the change was made
+    created_at       : date
+
+Change:  (join table between Changelist and  table "class_name" )
+    changelist_id   : int
+    class_name      : string
+    row_id          : int
+    change_type     : char     // can be: { create, update, destroy}  
+
+
+About row_id & change type:
+
+this data is only for fast lookup
+In case of database inconsistency, we always trust data from 
+model table (to do it, we can select rows which have 
+cl_create <= changelist_number and changelist_number < cl_destroy)
+ 
+
+///////////Columns added to each versioned class////////////////////////
+
+- is_versioned_obj
+  may be equal to 0 or 1,  if it's =  
+
+- version
+- cl_create
+- cl_destroy
+- {self.to_s.foreign_key}
+
+class Car 
+  acts_like_svn
+end
+
+"acts_like_svn" adds to cars table following columns:
+
+- version
+
+
+*******************************************************************************
+Questions & Answers
+
+1. Why one-table desing ?
+
+We started with two-table design, so there was a table for models (i.e. Car)
+and for versions of those models ( i.e. CarVersion ). This approach looked 
+cleaner to us than approach in which we store models and versions in the same 
+table. And both ways looked isomorphic in terms of implementation. 
+Unfortunately, they wasn't ..
+
+Problems with two-tables design:
+
+- user may set conditions on associations, i.e.  "cars.color = red". and we're
+  querying not "cars" table but  "car_versions" table, so we need to deal with
+  raw SQL and somehow rewrite conditions like that to "car_versions.color = red". 
+  It's awful and gets much more complicated when user choose custom table names.
+
+- very hard to integrate with Rails proxy. In one-table design it's enough to 
+  scope rails core functions with some additional conditions. In two-tables, 
+  we need to rewrite many functions, because each find(...)  is refering to 
+  non-versioned class, and I want to ask about versioned class.
+
+
+2. Why obj.versions returns Array instad of Proxy?
+
+I don't know how to solve this problem yet. If there's no at_changelist
+in call chain, plugin is querying only rows with is_versioned_obj = 0
+(which obviously won't count versions).  Adding  is_versioned_obj = 1 to
+association conditions won't solve this problem, because functions which rewrites SQL changes
+0 -> 1  only if there cl_create in sql string. And if functions doesn't run,
+we end up with conditions   is_versioned_obj = 0  AND is_versioned_obj = 1 
+which will return empty set.  (or with is_versioned_obj = 0,
+
+
+3. Why I need some strange and awful hack in ActiveRecord::Base::add_conditions! ?
+
+

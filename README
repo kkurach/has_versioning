@@ -1,0 +1,60 @@
+# Copyright 2009 Google Inc.
+# Original author: Karol Kurach <kkurach (at) gmail (dot) com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#      http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+ActsAsSvn
+=========
+
+
+requires  RAILS  >=  2.3.3
+( there're some differences in  belongs_to_association.rb between 2.3.2 and 2.3.3.  
+2.3.3 makes life simpler, and it newer, so I decided to write version compatible with it... )
+
+
+plugin wasn't tested with non-standard naming ( different than rails default table names, foreign keys, etc...)
+so most probably it won't work in this case.  
+
+queries which includes id field in conditions are forbidden after at_changelist(cl).
+so, for example this query will give wrong output:
+
+User.find_by_name('karol').at_changelist(5).cars.find(:all, :conditions => { :id => 4..10 } )
+
+but this is ok:
+User.find_by_name('karol').at_changelist(5).cars.find(:all, :conditions => { :color => 'red' })
+
+only conditions with primary key after at_changelist are BAD
+
+
+Example
+=======
+
+
+
+
+Special thanks to:
+=======
+
+Nick Eskelinen - for an idea of writing this plugin, help with starting it, solving tons of my problems & much more
+
+Joel Votaw - for being my mentor while Nick was away, and several REALLY great design advises, 
+             without which I wouldn't be able to finish writing the plugin.
+
+Shane Liebling & Daniel Van Derveer - for everyday's help in Ruby/Rails/Git problems ;)
+
+also,
+[Nick,Joel,Dan,Shane].each { |x| 
+  Karol.thanks_for_code_reviews_and_your_patience_when_I_was_asking_stupid_questions(x)
+}
+
