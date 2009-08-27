@@ -139,9 +139,7 @@ module ActiveRecord  # :nodoc:
       # Args:
       # - all valid args for create_table method
       #
-      def create_versioned_table(create_table_options={})
-        # create version column in main table if it does not exist
-        #  suggestion:  add_versioning_columns
+      def add_versioning_columns(create_table_options={})
         add_column(table_name, versioned_foreign_key, :integer)
         add_column(table_name, :cl_create, :integer)
         add_column(table_name, :cl_destroy, :integer)
@@ -163,7 +161,7 @@ module ActiveRecord  # :nodoc:
 
       # Rake migration task to drop the versioned table
       #
-      def drop_versioned_table
+      def delete_versioning_columns
         puts "No way"
         #  FIXME delete_versioning_columns
         # self.connection.drop_table versioned_table_name

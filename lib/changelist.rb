@@ -64,6 +64,13 @@ class Changelist < ActiveRecord::Base  #FIXME: not thread-safe
 
     chglst
   end
+  
+  def self.create_versioning_table(options={})
+    self.connection.create_table('changelists', options) do |t|
+      t.string :who
+      t.string :desc
+    end
+  end
 
   def info
     self.changes.each do |chg|

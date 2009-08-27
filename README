@@ -27,8 +27,30 @@ This plugin adds version control to your's app models. It allows to:
 Install
 =======
 
-just copy this plugin to yourapp/vendor/plugins
+1.copy this plugin to yourapp/vendor/plugins.
 
+2.add new migration, with those 2 lines:
+
+Changelist.create_versioning_table
+Change.create_versioning_table
+
+3.for each model, which you want to version, add
+'has_versioning' to class definition, and and call
+to 'add_versioning_columns' in migration.
+so, if you have:
+
+class User
+end
+
+you need to change it to
+class User
+  has_versioning
+end
+
+and add  "User.add_versioning_columns" into your migrations.
+
+4. add argument  :versioned => true, for each association you want
+to version. both sides of association MUST have versioning.
 
 Requirements
 ============
@@ -104,8 +126,8 @@ user.at_version(1).name             # => 'kkurach'
 c1 = Car.create(:color => 'red')   
 c2 = Car.create(:color => 'blue')
 
-cl_add1 = Changelist.record! { u.cars << c1 }
-cl_add2 = Changelist.record! { u.cars << c2 }
+cl_add1 = Changelist.record! { user.cars << c1 }
+cl_add2 = Changelist.record! { user.cars << c2 }
 
 
 user.cars                                       # => [c1, c2]

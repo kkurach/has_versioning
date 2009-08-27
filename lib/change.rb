@@ -15,4 +15,13 @@
 
 class Change < ActiveRecord::Base
   belongs_to :changelist
+
+  def self.create_versioning_table(options={})
+    self.connection.create_table('changes', options) do |t|
+      t.integer :changelist_id
+      t.string  :class_name
+      t.integer :row_id
+      t.string  :change_type
+    end
+  end
 end
