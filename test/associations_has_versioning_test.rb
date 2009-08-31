@@ -20,7 +20,27 @@ require File.dirname(__FILE__) + '/has_versioning_models'
 
 class HasManyThroughTests < Test::Unit::TestCase
   def test_hmt_simple
+    w1 = Writer.create(:name => 'karol')
+    w2 = Writer.create(:name => 'nick' )
+    p1 = Pen.create(:color => 'blue')
+    p2 = Pen.create(:color => 'red')
+    
+    require 'pp'
 
+    cl1 = Changelist.record! do
+      w1.pens << p1
+    end
+    cl2 = Changelist.record! do
+      w1.pens << p2
+    end
+
+    pp Writer.dump
+    puts "--"
+    pp PenWriter.dump
+    puts "--"
+    pp Pen.dump
+    puts "at_changelist(#{cl1.id}) = "
+    pp w1.at_changelist(cl1.id).pens
   end
 
 end

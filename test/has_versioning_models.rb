@@ -110,7 +110,7 @@ class Test::Unit::TestCase
     Change.delete_all
     Changelist.delete_all
 
-    [Article, Car, Dog, Engine, User].each do |x|
+    [Article, Car, Dog, Engine, User, Writer, PenWriter, Pen, PenRefill, Refill].each do |x|
       x.delete_all
     end
   end

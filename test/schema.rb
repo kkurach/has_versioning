@@ -109,7 +109,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.integer :version
   end
   
-  Writer.create_versioned_table(:force => true)
+  Writer.add_versioning_columns(:force => true)
   
   create_table :pen_writers, :force => true do |t|
     t.integer :pen_id
@@ -117,14 +117,14 @@ ActiveRecord::Schema.define(:version => 1) do
     t.integer :version
   end
   
-  PenWriter.create_versioned_table(:force => true)
+  PenWriter.add_versioning_columns(:force => true)
 
   create_table :pens, :force => true do |t|
     t.string :color
     t.integer :version
   end
 
-  Pen.create_versioned_table(:force => true)
+  Pen.add_versioning_columns(:force => true)
 
   create_table :pen_refills, :force => true do |t|
     t.integer :pen_id
@@ -132,14 +132,14 @@ ActiveRecord::Schema.define(:version => 1) do
     t.integer :version
   end
   
-  PenRefill.create_versioned_table(:force => true)
+  PenRefill.add_versioning_columns(:force => true)
 
   create_table :refills, :force => true do |t|
     t.string :brand
     t.integer :version
   end
   
-  Refill.create_versioned_table(:force => true)
+  Refill.add_versioning_columns(:force => true)
 
 end
 

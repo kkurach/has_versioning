@@ -186,6 +186,15 @@ module ActiveRecord  # :nodoc:
           self.find(:all)
         end
       end
+      
+      # yet anothet debugging tool
+      #
+      def dump
+        vec1 = self.find(:all)
+        vec2 = self.find_all_versions
+        vec2 unless vec1
+        vec1.concat(vec2).sort { |x,y|  x.id <=> y.id }
+      end
 
       # Convert a join map to a sql query string
       #
@@ -669,7 +678,7 @@ module ActiveRecord::Associations
   class HasManyThroughAssociation < HasManyAssociation
     alias_method :find_target_orig, :find_target
     def find_target
-      scope_to_cl { find_target_orig }
+      vec = scope_to_cl { find_target_orig }
       vec.map { |elem| process_output(elem) }
     end
   end
