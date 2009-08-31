@@ -85,7 +85,7 @@ module ActiveRecord  # :nodoc:
         class_eval do
           before_save :set_new_version
 
-          after_create :save_version_on_create
+          after_create :save_version_on_create_or_update
           after_update :save_version
 
           after_create :save_change_create
@@ -211,7 +211,7 @@ module ActiveRecord  # :nodoc:
       # constrol. It's used in find_target. Also, it will be used in
       # has_many :through.
       #
-      def acts_like_svn?
+      def acts_like_svn?  # TODO(kkurach): change to sth else
         true
       end
 
@@ -303,7 +303,7 @@ module ActiveRecord  # :nodoc:
       def save_version
         return true if self.is_versioned_obj == 1
 
-        save_version_on_create if save_version?
+        save_version_on_create_or_update if save_version?
       end
 
       # callback after creating object and after update(if there're changes)
@@ -312,7 +312,7 @@ module ActiveRecord  # :nodoc:
       # also, it sets instance variable 'new_ver_added' if new row was saved.
       # this variable is needed by 'save_change' callback
       #
-      def save_version_on_create
+      def save_version_on_create_or_update
         return true if self.is_versioned_obj == 1
 
         self.send("#{self.class.versioned_foreign_key}=", self.id)
@@ -343,12 +343,14 @@ module ActiveRecord  # :nodoc:
       # - orig_model: object from which all values are taken
       #
       def copy_existing_attributes(new_model, orig_model)
+        # FIXME(kkurach): dup here is enough?
+
         orig_model.attribute_names.each do |key|
           next if self.class.non_versioned_fields.include?(key)
 
-          if new_model.attribute_names.include?(key)
+      #    if new_model.attribute_names.include?(key)
             new_model.send("#{key}=", orig_model.attributes[key])
-          end
+      #    end
         end
       end
 
@@ -569,8 +571,7 @@ end  # ActiveRecord
 ActiveRecord::ActiveRecordError
 #### end of work-around
 
-module ActiveRecord
-  module Associations
+module ActiveRecord::Associations
 
   class AssociationProxy
 
@@ -636,89 +637,88 @@ module ActiveRecord
 
   end
 
-    class BelongsToAssociation < AssociationProxy #:nodoc:
+  class BelongsToAssociation < AssociationProxy #:nodoc:
 
-      alias_method :find_target_orig, :find_target
-      def find_target
-        
-        # I'm changing  id --> obj_id in query to klass
-        old_val = @reflection.options[:primary_key]
-        @reflection.options[:primary_key] = @reflection.klass.to_s.foreign_key
-        vec = scope_to_cl { find_target_orig }
-        @reflection.options[:primary_key] = old_val
+    alias_method :find_target_orig, :find_target
+    def find_target
+      
+      # I'm changing  id --> obj_id in query to klass
+      old_val = @reflection.options[:primary_key]
+      @reflection.options[:primary_key] = @reflection.klass.to_s.foreign_key
+      vec = scope_to_cl { find_target_orig }
+      @reflection.options[:primary_key] = old_val
 
-        process_output(vec)
-      end
+      process_output(vec)
+    end
+  end
+
+  class HasOneAssociation < BelongsToAssociation #:nodoc:
+    alias_method :find_target_orig, :find_target
+
+    # find_target for has_one..  it returns unfrozen target
+    # (I'm calling obj.dup here), because sometimes it'll be modified
+    # (e.g. foreign_key --> NULL on delete)
+    #
+    def find_target
+      vec = scope_to_cl { find_target_orig }
+      obj = process_output(vec)
+      obj ? obj.dup : obj
+    end
+  end
+
+  class  AssociationCollection < AssociationProxy
+
+    alias_method :count_orig, :count
+    def count(*args)
+      scope_to_cl { count_orig(*args) }
     end
 
-    class HasOneAssociation < BelongsToAssociation #:nodoc:
-      alias_method :find_target_orig, :find_target
-
-      # find_target for has_one..  it returns unfrozen target
-      # (I'm calling obj.dup here), because sometimes it'll be modified
-      # (e.g. foreign_key --> NULL on delete)
-      #
-      def find_target
-        vec = scope_to_cl { find_target_orig }
-        obj = process_output(vec)
-        obj ? obj.dup : obj
-      end
+    alias_method :sum_orig, :sum
+    def sum(*args)
+      scope_to_cl { sum_orig(*args) }
     end
 
-    class  AssociationCollection < AssociationProxy
-
-        alias_method :count_orig, :count
-        def count(*args)
-          scope_to_cl { count_orig(*args) }
-        end
-
-        alias_method :sum_orig, :sum
-        def sum(*args)
-          scope_to_cl { sum_orig(*args) }
-        end
-
-        alias_method :size_orig, :size
-        def size
-          scope_to_cl { size_orig }
-        end
-
-        alias_method :find_orig, :find
-        def find(*args)
-          scope_to_cl { find_orig(*args) }
-        end
-
-        # FIXME:  nested with_scope doesn't work.
-        # FIXME:  I believe it's a Rails bug:
-        # https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets
-        # /3079-with_scope-merges-find-conditions-incorrectly
-        #
-        # what's more strange, this approach works:
-        #  cond = { :is_versioned_obj => 1,
-        #           :cl_create => 0..cl_num,
-        #           :cl_destroy => (cl_num+1)..max_cl }
-        #
-        # with_scope( :find => { :conditions => cond } )  {  find(:all) }
-        #
-        #
-        # and the one below (which should be isomorphic) doesn't work:
-        #
-        #  cond1 = { :is_versioned_obj => 1 }
-        #  cond2 = { :cl_create => 0..cl_num, :cl_destroy => (cl_num+1)..max_cl }
-        #
-        #  with_scope( :find => { :conditions => cond1 }) do
-        #    with_scope( :find => { :conditions => cond2}) {  find(:all) }
-        # end
-        #
-        #
-        alias_method :find_target_orig, :find_target
-        def find_target
-          vec = scope_to_cl { find_target_orig }
-          vec.map { |elem| process_output(elem) }
-        end
-
-      private
-
+    alias_method :size_orig, :size
+    def size
+      scope_to_cl { size_orig }
     end
+
+    alias_method :find_orig, :find
+    def find(*args)
+      scope_to_cl { find_orig(*args) }
+    end
+
+    # FIXME:  nested with_scope doesn't work.
+    # FIXME:  I believe it's a Rails bug:
+    # https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets
+    # /3079-with_scope-merges-find-conditions-incorrectly
+    #
+    # what's more strange, this approach works:
+    #  cond = { :is_versioned_obj => 1,
+    #           :cl_create => 0..cl_num,
+    #           :cl_destroy => (cl_num+1)..max_cl }
+    #
+    # with_scope( :find => { :conditions => cond } )  {  find(:all) }
+    #
+    #
+    # and the one below (which should be isomorphic) doesn't work:
+    #
+    #  cond1 = { :is_versioned_obj => 1 }
+    #  cond2 = { :cl_create => 0..cl_num, :cl_destroy => (cl_num+1)..max_cl }
+    #
+    #  with_scope( :find => { :conditions => cond1 }) do
+    #    with_scope( :find => { :conditions => cond2}) {  find(:all) }
+    # end
+    #
+    #
+    alias_method :find_target_orig, :find_target
+    def find_target
+      vec = scope_to_cl { find_target_orig }
+      vec.map { |elem| process_output(elem) }
+    end
+
+    private
+
   end
 end
 
