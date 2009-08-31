@@ -665,6 +665,14 @@ module ActiveRecord::Associations
       obj ? obj.dup : obj
     end
   end
+  
+  class HasManyThroughAssociation < HasManyAssociation
+    alias_method :find_target_orig, :find_target
+    def find_target
+      scope_to_cl { find_target_orig }
+      vec.map { |elem| process_output(elem) }
+    end
+  end
 
   class  AssociationCollection < AssociationProxy
 

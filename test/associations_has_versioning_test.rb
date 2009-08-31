@@ -17,6 +17,14 @@ require File.dirname(__FILE__) + '/test_helper'
 require 'flexmock/test_unit'
 require File.dirname(__FILE__) + '/has_versioning_models'
 
+
+class HasManyThroughTests < Test::Unit::TestCase
+  def test_hmt_simple
+
+  end
+
+end
+
 class BelongsToTests < Test::Unit::TestCase 
   
   def test_belongs_to_simple

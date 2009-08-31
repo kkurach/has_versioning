@@ -68,6 +68,39 @@ class Circle < Shape
   has_versioning
 end
 
+# HAS MANY THROUGH
+
+class Writer < ActiveRecord::Base
+  has_versioning
+  has_many :pen_writers, :versioned => true
+  has_many :pens, :through => :pen_writers, :versioned => true
+  has_many :refills, :through => :pens, :versioned => true
+end
+
+class PenWriter < ActiveRecord::Base
+  has_versioning
+  belongs_to :writer
+  belongs_to :pen
+end
+
+class Pen < ActiveRecord::Base
+  has_versioning
+  has_many :pen_writers, :versioned => true
+  has_many :pens, :through => :pen_writers, :versioned => true
+  has_many :pen_refills , :versioned => true
+  has_many :refills, :through => :pen_refills, :versioned => true
+end
+
+class PenRefill < ActiveRecord::Base
+  has_versioning
+  belongs_to :pen
+  belongs_to :refill
+end
+
+class Refill < ActiveRecord::Base
+  has_many :pens, :through => :pen_refills
+  has_versioning
+end
 
 # Unit Test HELPER
 class Test::Unit::TestCase

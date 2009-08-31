@@ -31,7 +31,7 @@ module ActiveRecord
 
             elem.send("#{self.class.versioned_foreign_key}=", nil)
             elem.set_new_version
-            elem.save_version_on_create
+            elem.save_version_on_create_or_update
             elem.save_change_update
           end
           options[:before_remove] = [callback_method.to_sym] +
@@ -57,7 +57,8 @@ module ActiveRecord
 
           if options[:versioned]
             if options[:through]
-              raise RuntimeError, 'versioning not supported for has_many :through'
+              puts "has many :through"
+              #raise RuntimeError, 'versioning not supported for has_many :through'
             else
               update_before_delete_hasmany_hasone(association_id, options)
             end
