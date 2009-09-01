@@ -32,7 +32,7 @@ module ActiveRecord  # :nodoc:
       #
       # Args:
       # - versioned_table_name: Name of the table to store versions
-      # - versioned_foreign_key: column to link the versioned class to normal
+      # - real_id: column to link the versioned class to normal
       # - cl_create_column: name of the column in versioned table, which
       #                     stores information about changelist number,
       #                     on which given object version was created
@@ -48,7 +48,7 @@ module ActiveRecord  # :nodoc:
 
         class_eval do
           cattr_accessor :versioned_class_name,
-                         :versioned_foreign_key,
+                         :real_id,
                          :version_column,
                          :versioned_table_name,
                          :cl_create_column,
@@ -69,9 +69,9 @@ module ActiveRecord  # :nodoc:
 
         self.versioned_table_name = options[:table_name] ||
             "#{table_name_prefix}#{desc_class}_versions#{table_name_suffix}"
-
-        self.versioned_foreign_key = options[:foreign_key] ||
-                                     "#{self.to_s.foreign_key}"
+        
+        # FIXME(kkurach): why it blows up when I change true_id -> real_id ??!
+        self.real_id = options[:real_id] || 'true_id'  
 
         # TODO(kkurach): allow user to use his own version_column name
         self.version_column = 'version'
@@ -140,9 +140,9 @@ module ActiveRecord  # :nodoc:
       # - all valid args for create_table method
       #
       def add_versioning_columns(create_table_options={})
-        add_column(table_name, versioned_foreign_key, :integer)
-        add_column(table_name, :cl_create, :integer)
-        add_column(table_name, :cl_destroy, :integer)
+        add_column(table_name, real_id, :integer)
+        add_column(table_name, cl_create_column, :integer)
+        add_column(table_name, cl_destroy_column, :integer)
         add_column(table_name, version_column, :integer)
         add_column(table_name, :is_versioned_obj, :integer)
 
@@ -251,7 +251,7 @@ module ActiveRecord  # :nodoc:
 
       # returns string with conditions for
       def cond_for_version
-        "is_versioned_obj = 1 and #{self.class.versioned_foreign_key} = #{self.id}"
+        "is_versioned_obj = 1 and #{self.class.real_id} = #{self.id}"
       end
 
       # returns all versions of given object
@@ -315,7 +315,7 @@ module ActiveRecord  # :nodoc:
       def save_version_on_create_or_update
         return true if self.is_versioned_obj == 1
 
-        self.send("#{self.class.versioned_foreign_key}=", self.id)
+        self.send("#{self.class.real_id}=", self.id)
 
         rev = self.class.versioned_class.new
 
@@ -323,7 +323,7 @@ module ActiveRecord  # :nodoc:
         copy_existing_attributes(rev, self)
 
         rev.version = send(self.class.version_column)
-        rev.send("#{self.class.versioned_foreign_key}=", self.id)
+        rev.send("#{self.class.real_id}=", self.id)
         rev.send("#{self.class.cl_create_column}=", Changelist.current.id)
         rev.send("#{self.class.cl_destroy_column}=", MAX_CL_NUMBER)
         rev.is_versioned_obj = 1
@@ -542,7 +542,7 @@ module ActiveRecord  # :nodoc:
 
         # set primary key
         primary_key = norm_obj.class.primary_key
-        key_to_norm = norm_obj.versioned_foreign_key
+        key_to_norm = norm_obj.real_id
         if ver_obj.attributes[key_to_norm]  # don't set nil
           norm_obj.send("#{primary_key}=", ver_obj.attributes[key_to_norm])
         end
@@ -644,7 +644,7 @@ module ActiveRecord::Associations
       
       # I'm changing  id --> obj_id in query to klass
       old_val = @reflection.options[:primary_key]
-      @reflection.options[:primary_key] = @reflection.klass.to_s.foreign_key
+      @reflection.options[:primary_key] = @reflection.klass.real_id
       vec = scope_to_cl { find_target_orig }
       @reflection.options[:primary_key] = old_val
 
