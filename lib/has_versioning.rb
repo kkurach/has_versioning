@@ -729,7 +729,7 @@ module ActiveRecord::Associations
         polymorphic_join
       ]
 
-      puts "ret = #{ret}"
+      #puts "ret = #{ret}"
       ret
     end
   end

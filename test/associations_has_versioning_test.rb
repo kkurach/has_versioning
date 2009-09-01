@@ -19,6 +19,12 @@ require File.dirname(__FILE__) + '/has_versioning_models'
 
 
 class HasManyThroughTests < Test::Unit::TestCase
+
+  def deb(obj, cl)
+    puts "obj.name (1 - karol 2 - nick) = #{obj.name}   cl = #{cl} \n\n"
+    obj.at_changelist(cl).pens.each { |x| pp x }
+    puts "--end of out--"
+  end
   def test_hmt_simple
     Writer.delete_all
     Pen.delete_all
@@ -26,26 +32,27 @@ class HasManyThroughTests < Test::Unit::TestCase
     w2 = Writer.create(:name => 'nick' )
     p1 = Pen.create(:color => 'blue')
     p2 = Pen.create(:color => 'red')
-    
+    p3 = Pen.create(:color => 'green')
+
     require 'pp'
 
-    cl1 = Changelist.record! do
-      w1.pens << p1
-    end
-    cl2 = Changelist.record! do
-      w1.pens << p2
-    end
-
+    cl1 = Changelist.record! { w1.pens << p1 }
+    cl2 = Changelist.record! { w1.pens << p2 }
+    cl3 = Changelist.record! { w2.pens << p2 }
+    cl4 = Changelist.record! { w2.pens << p3 }
+    
     pp Writer.dump
     puts "--"
     pp PenWriter.dump
     puts "--"
     pp Pen.dump
-    puts "at_changelist(#{cl1.id}) = "
-    pp w1.at_changelist(cl1.id).pens
-    pp w1.at_changelist(cl2.id).pens
+    puts "---DEBUG---"
+    deb(w1, cl1.id)
+    deb(w1, cl2.id)
+    deb(w2, cl1.id)
+    deb(w2, cl3.id)
+    deb(w2, cl4.id)
   end
-
 end
 
 class BelongsToTests < Test::Unit::TestCase 
