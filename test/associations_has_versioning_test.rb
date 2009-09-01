@@ -20,6 +20,8 @@ require File.dirname(__FILE__) + '/has_versioning_models'
 
 class HasManyThroughTests < Test::Unit::TestCase
   def test_hmt_simple
+    Writer.delete_all
+    Pen.delete_all
     w1 = Writer.create(:name => 'karol')
     w2 = Writer.create(:name => 'nick' )
     p1 = Pen.create(:color => 'blue')
@@ -41,6 +43,7 @@ class HasManyThroughTests < Test::Unit::TestCase
     pp Pen.dump
     puts "at_changelist(#{cl1.id}) = "
     pp w1.at_changelist(cl1.id).pens
+    pp w1.at_changelist(cl2.id).pens
   end
 
 end

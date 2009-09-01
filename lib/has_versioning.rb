@@ -677,9 +677,60 @@ module ActiveRecord::Associations
   
   class HasManyThroughAssociation < HasManyAssociation
     alias_method :find_target_orig, :find_target
+
     def find_target
-      vec = scope_to_cl { find_target_orig }
+      return find_target_orig unless @owner.acts_like?('svn')
+
+      max_cl = ActiveRecord::HasVersioning::MAX_CL_NUMBER
+      cl_num = @owner.cl_num || max_cl - 1
+      
+      tab1 = @reflection.through_reflection.quoted_table_name
+      tab2 = @reflection.quoted_table_name
+
+      cond = [" #{tab1}.is_versioned_obj = 1 and #{tab1}.cl_create <= #{cl_num} and
+                #{tab1}.cl_destroy > #{cl_num} and #{tab2}.is_versioned_obj = 1 and
+                #{tab2}.cl_create <= #{cl_num} and #{tab2}.cl_destroy > #{cl_num} " ]
+      
+      vec = nil
+      with_scope({ :find => { :conditions => cond }} ) do  # TODO: why nested scope doesn't work?
+        vec = find_target_orig
+      end
       vec.map { |elem| process_output(elem) }
+    end
+
+    # scary stuff from ActiveRecord...
+    #
+    def construct_joins(custom_joins = nil)
+      polymorphic_join = nil
+      if @reflection.source_reflection.macro == :belongs_to
+        reflection_primary_key = @reflection.klass.primary_key
+        source_primary_key     = @reflection.source_reflection.primary_key_name
+        if @reflection.options[:source_type]
+          polymorphic_join = "AND %s.%s = %s" % [
+            @reflection.through_reflection.quoted_table_name, "#{@reflection.source_reflection.options[:foreign_type]}",
+            @owner.class.quote_value(@reflection.options[:source_type])
+          ]
+        end
+      else
+        reflection_primary_key = @reflection.source_reflection.primary_key_name
+        source_primary_key     = @reflection.through_reflection.klass.primary_key
+        if @reflection.source_reflection.options[:as]
+          polymorphic_join = "AND %s.%s = %s" % [
+            @reflection.quoted_table_name, "#{@reflection.source_reflection.options[:as]}_type",
+            @owner.class.quote_value(@reflection.through_reflection.klass.name)
+          ]
+        end
+      end
+
+      ret = "INNER JOIN %s ON %s.%s = %s.%s %s #{@reflection.options[:joins]} #{custom_joins}" % [
+        @reflection.through_reflection.quoted_table_name,
+        @reflection.quoted_table_name, 'true_id', #reflection_primary_key,  FIXME
+        @reflection.through_reflection.quoted_table_name, source_primary_key,
+        polymorphic_join
+      ]
+
+      puts "ret = #{ret}"
+      ret
     end
   end
 
