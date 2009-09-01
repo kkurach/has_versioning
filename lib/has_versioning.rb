@@ -93,7 +93,7 @@ module ActiveRecord  # :nodoc:
           after_update :save_change_update
 
         end  # class eval
-
+        
       end
 
       # Return an array of names that are saved in the versioned table
@@ -697,10 +697,12 @@ module ActiveRecord::Associations
       end
       vec.map { |elem| process_output(elem) }
     end
-
+    
+#    alias_method :construct_joins_orig, :construct_joins
     # scary stuff from ActiveRecord...
     #
     def construct_joins(custom_joins = nil)
+
       polymorphic_join = nil
       if @reflection.source_reflection.macro == :belongs_to
         reflection_primary_key = @reflection.klass.primary_key
@@ -724,7 +726,7 @@ module ActiveRecord::Associations
 
       ret = "INNER JOIN %s ON %s.%s = %s.%s %s #{@reflection.options[:joins]} #{custom_joins}" % [
         @reflection.through_reflection.quoted_table_name,
-        @reflection.quoted_table_name, 'true_id', #reflection_primary_key,  FIXME
+        @reflection.quoted_table_name, @owner.class.real_id, #reflection_primary_key,  FIXME
         @reflection.through_reflection.quoted_table_name, source_primary_key,
         polymorphic_join
       ]
