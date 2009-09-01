@@ -25,33 +25,127 @@ class HasManyThroughTests < Test::Unit::TestCase
     obj.at_changelist(cl).pens.each { |x| pp x }
     puts "--end of out--"
   end
-  def test_hmt_simple
-    Writer.delete_all
-    Pen.delete_all
+  def deb2(obj, cl)
+    puts "obj.name (1 - karol 2 - nick) = #{obj.color}   cl = #{cl} \n\n"
+    obj.at_changelist(cl).writers.each { |x| pp x }
+    puts "--end of out--"
+  end
+
+  def test_hmt_add_and_update
+
+    require 'pp'
     w1 = Writer.create(:name => 'karol')
     w2 = Writer.create(:name => 'nick' )
     p1 = Pen.create(:color => 'blue')
     p2 = Pen.create(:color => 'red')
     p3 = Pen.create(:color => 'green')
-
-    require 'pp'
-
-    cl1 = Changelist.record! { w1.pens << p1 }
-    cl2 = Changelist.record! { w1.pens << p2 }
-    cl3 = Changelist.record! { w2.pens << p2 }
-    cl4 = Changelist.record! { w2.pens << p3 }
     
+    cl = Array.new
+
+    cl[1] = Changelist.record! { w1.pens << p1 }
+    
+    cl[2] = Changelist.record! { w1.name = 'shane'; w1.save! }
+    
+    cl[3] = Changelist.record! { w1.pens << p2 }
+    
+    cl[4] = Changelist.record! { w1.name = 'dan'; w1.save! }
+    
+    cl[5] = Changelist.record! { w2.pens << p2 }
+
+    cl[6] = Changelist.record! { w2.pens << p3 }
+    
+    (1..6).each { |i|  cl[i] = cl[i].id }
+    
+    pen_cmp = Proc.new { |x,y|  x.color <=> y.color }
+    writer_cmp = Proc.new { |x,y| x.name <=> y.name }
+
+    # current status
+    assert_equal w1.pens.to_ary.sort(&pen_cmp), [p1,p2].sort(&pen_cmp)
+    assert_equal w2.pens.to_ary.sort(&pen_cmp), [p2,p3].sort(&pen_cmp)
+    assert_equal p1.writers, [w1]
+    assert_equal p2.writers.sort(&writer_cmp) , [w1,w2].sort(&writer_cmp)
+    
+    # at_changelist
+    
+    assert_equal w1.at_changelist(cl[2]).pens, [p1]
+    assert_equal w1.at_changelist(cl[1]-1).pens, []
+    assert_equal w2.at_changelist(cl[4]).pens, []
+    assert_equal w2.at_changelist(cl[6]).pens.sort(&pen_cmp), [p2,p3].sort(&pen_cmp)
+    
+    assert_equal p2.at_changelist(cl[3]).writers.sort(&writer_cmp).first.name, 'shane'
+    assert_equal p2.at_changelist(cl[4]).writers.sort(&writer_cmp).first.name, 'dan'
+    assert_equal p1.at_changelist(cl[1]).writers.sort(&writer_cmp).first.name, 'karol'
+    
+      
+  end
+  
+  def mydeb(cl)
+    require 'pp'
+    puts "CL = #{cl}"
+    puts "--------"
     pp Writer.dump
-    puts "--"
+    puts " "
     pp PenWriter.dump
-    puts "--"
+    puts " "
     pp Pen.dump
-    puts "---DEBUG---"
-    deb(w1, cl1.id)
-    deb(w1, cl2.id)
-    deb(w2, cl1.id)
-    deb(w2, cl3.id)
-    deb(w2, cl4.id)
+    puts "--------"
+  end
+
+  def test_from_spreadsheet_many_to_many
+    u = Writer.new
+    c = Pen.new
+    c2 = Pen.new
+    
+    cl = Array.new
+
+    cl[1] = Changelist.record! {
+      u.name = 'karol'
+      u.save!
+    }
+
+    mydeb(cl[1].id)
+
+    cl[2] = Changelist.record! { 
+      c.color = 'red'
+      c.save!
+    }
+
+    mydeb(cl[2].id)
+
+    cl[3] = Changelist.record! { u.pens << c }
+
+    mydeb(cl[3].id)
+
+    cl[4] = Changelist.record! { 
+      u.name = 'joel' 
+      u.save!
+    }
+
+    mydeb(cl[4].id)
+
+    cl[5] = Changelist.record! {
+      c.color = 'blue'
+      c.save!
+    }
+
+    mydeb(cl[5].id)
+    cl[6] = Changelist.record! {
+      c2.color = 'black'
+      c2.save!
+      u.pens << c2
+    }
+
+    mydeb(cl[6].id)
+    
+    u.pens.delete(c)
+
+    mydeb(7)
+    #cl[7] = Changelist.record! { u.pens.delete(c) }
+
+    #mydeb(cl[7].id)
+    cl[8] = Changelist.record! { u.pens << c }
+
+    mydeb(8)
   end
 end
 

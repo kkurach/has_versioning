@@ -86,7 +86,7 @@ end
 class Pen < ActiveRecord::Base
   has_versioning
   has_many :pen_writers, :versioned => true
-  has_many :pens, :through => :pen_writers, :versioned => true
+  has_many :writers, :through => :pen_writers, :versioned => true
   has_many :pen_refills , :versioned => true
   has_many :refills, :through => :pen_refills, :versioned => true
 end
