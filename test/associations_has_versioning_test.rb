@@ -199,15 +199,16 @@ class HasManyTestWithoutConditions < Test::Unit::TestCase
     assert_equal 'red', c.color
 
     c_ver = c.versions.first
-    assert_equal c.id, c_ver.car_id
+    assert_equal c.id, c_ver.send("#{c_ver.class.real_id}")
     assert_equal nil, c_ver.user_id
     assert_equal start_id + 1, c_ver.cl_create
 
     # 3
     u.cars << c
     
-    c_ver1 = c.get_version(1, { :car_id => c.id})
-    c_ver2 = c.get_version(2, { :car_id => c.id})
+    cond = { c.class.real_id => c.id }
+    c_ver1 = c.get_version(1, cond)
+    c_ver2 = c.get_version(2, cond)
 
 
     assert_equal u.id, c.user_id
@@ -218,8 +219,8 @@ class HasManyTestWithoutConditions < Test::Unit::TestCase
     # 4
     u.cars.delete(c)
 
-    c_ver2 = c.get_version(2, { :car_id => c.id})
-    c_ver3 = c.get_version(3, { :car_id => c.id})
+    c_ver2 = c.get_version(2, cond)
+    c_ver3 = c.get_version(3, cond)
     
 
     assert_equal nil, c.user_id
@@ -232,8 +233,8 @@ class HasManyTestWithoutConditions < Test::Unit::TestCase
     # 5
     u.cars << c
 
-    c_ver3 = c.get_version(3, { :car_id => c.id})
-    c_ver4 = c.get_version(4, { :car_id => c.id})
+    c_ver3 = c.get_version(3, cond)
+    c_ver4 = c.get_version(4, cond)
 
     assert_equal 4, c.versions.to_ary.size
     assert_equal 1, u.versions.to_ary.size

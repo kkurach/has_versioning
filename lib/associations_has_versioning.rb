@@ -29,7 +29,7 @@ module ActiveRecord
             foreign_key = options[:foreign_key] ||
                           "#{self.class.to_s.foreign_key}"
 
-            elem.send("#{self.class.versioned_foreign_key}=", nil)
+            elem.send("#{foreign_key}=", nil)
             elem.set_new_version
             elem.save_version_on_create_or_update
             elem.save_change_update
