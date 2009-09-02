@@ -706,12 +706,16 @@ module ActiveRecord::Associations
       tab1 = @reflection.through_reflection.quoted_table_name
       tab2 = @reflection.quoted_table_name
 
-      cond = [" #{tab1}.is_versioned_obj = 1 and #{tab1}.cl_create <= #{cl_num} and
-                #{tab1}.cl_destroy > #{cl_num} and #{tab2}.is_versioned_obj = 1 and
-                #{tab2}.cl_create <= #{cl_num} and #{tab2}.cl_destroy > #{cl_num} " ]
-      
+      cond = ["#{tab1}.is_versioned_obj = 1 and 
+               #{tab1}.cl_create <= #{cl_num} and
+               #{tab1}.cl_destroy > #{cl_num} and
+               #{tab2}.is_versioned_obj = 1 and
+               #{tab2}.cl_create <= #{cl_num} and 
+               #{tab2}.cl_destroy > #{cl_num} "]
+                
       vec = nil
-      with_scope({ :find => { :conditions => cond }} ) do  # TODO: why nested scope doesn't work?
+      # TODO: why nested scope doesn't work?
+      with_scope({ :find => { :conditions => cond }} ) do  
         vec = find_target_orig
       end
       vec.map { |elem| process_output(elem) }
