@@ -82,7 +82,7 @@ class Engine
 end
 ---
 
-to make those models use versioning, we need to add 'has_versioning' in class definition.
+To make those models use versioning, we need to add 'has_versioning' in class definition.
 this will allow to query about attributes of this object in the past.
 
 if we also need to remember history of  has_many :cars assocition, we need to pass :versioned => true
