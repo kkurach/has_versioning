@@ -57,6 +57,12 @@ end
 - version
 
 
+******************************************************************************
+Use-cases
+
+for has_many :through
+https://spreadsheets.google.com/ccc?key=0AovuZ5PeSIqLdFpoWGk0MU4xeXVZMFE0V2g0NFBoN0E&hl=en
+
 *******************************************************************************
 Questions & Answers
 
