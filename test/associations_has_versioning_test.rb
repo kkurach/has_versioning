@@ -90,8 +90,8 @@ class HasManyThroughTests < Test::Unit::TestCase
     pp Pen.dump
     puts "--------"
   end
-
-  def test_from_spreadsheet_many_to_many
+  
+  def add_data_from_spreadsheet_many_to_many
     w = Writer.new
     p = Pen.new
     p2 = Pen.new
@@ -102,49 +102,83 @@ class HasManyThroughTests < Test::Unit::TestCase
       w.name = 'karol'
       w.save!
     }
-
-    mydeb(cl[1].id)
+    
+    #mydeb(cl[1].id)
 
     cl[2] = Changelist.record! { 
       p.color = 'red'
       p.save!
     }
 
-    mydeb(cl[2].id)
+    #mydeb(cl[2].id)
 
     cl[3] = Changelist.record! { w.pens << p }
 
-    mydeb(cl[3].id)
+    #mydeb(cl[3].id)
 
     cl[4] = Changelist.record! { 
       w.name = 'joel' 
       w.save!
     }
 
-    mydeb(cl[4].id)
+    #mydeb(cl[4].id)
 
     cl[5] = Changelist.record! {
       p.color = 'blue'
       p.save!
     }
 
-    mydeb(cl[5].id)
+    #mydeb(cl[5].id)
     cl[6] = Changelist.record! {
       p2.color = 'black'
       p2.save!
       w.pens << p2
     }
 
-    mydeb(cl[6].id)
+    #mydeb(cl[6].id)
     
-    w.pens.delete(p)
 
-    mydeb(7)
-    #cl[7] = Changelist.record! { u.pens.delete(c) }
+    cl[7] = Changelist.record! { w.pens.delete(p) }
+    #mydeb(cl[7].id)
 
     cl[8] = Changelist.record! { w.pens << p }
 
-    mydeb(8)
+    #mydeb(cl[8].id)
+    
+    (1..8).each { |i| cl[i] = cl[i].id }
+
+    [cl, w, p, p2]
+  end
+
+  def test_main_from_spreadsheet_many_to_many
+    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+    
+    pen_cmp = Proc.new { |x,y| x.id <=> y.id }
+
+    assert_equal 'karol', w.at_changelist(cl[1]).name
+    assert_equal 'joel', w.at_changelist(cl[6]).name
+    assert_equal 'red', p.at_changelist(cl[3]).color
+    assert_equal w.at_changelist(cl[3]).pens, [p.at_changelist(cl[3])]
+    assert_equal w.at_changelist(cl[6]).pens.sort(&pen_cmp), 
+                 [p.at_changelist(cl[6]), p2.at_changelist(cl[6])].sort(&pen_cmp)
+    assert_equal 1, w.at_changelist(cl[7]).pens.to_ary.size
+    assert_equal w.at_changelist(cl[8]), w
+    
+  end
+
+  def test_has_many_through_count
+    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+    assert_equal 1, w.at_changelist(cl[7]).pens.count
+  end
+
+  def test_has_many_through_size
+    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+    assert_equal 1, w.at_changelist(cl[7]).pens.size
+  end
+
+  def test_has_many_through_first
+    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+    assert_equal p2.at_changelist(cl[7]), w.at_changelist(cl[7]).pens.first
   end
 end
 
