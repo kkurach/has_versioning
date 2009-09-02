@@ -92,58 +92,57 @@ class HasManyThroughTests < Test::Unit::TestCase
   end
 
   def test_from_spreadsheet_many_to_many
-    u = Writer.new
-    c = Pen.new
-    c2 = Pen.new
+    w = Writer.new
+    p = Pen.new
+    p2 = Pen.new
     
     cl = Array.new
 
     cl[1] = Changelist.record! {
-      u.name = 'karol'
-      u.save!
+      w.name = 'karol'
+      w.save!
     }
 
     mydeb(cl[1].id)
 
     cl[2] = Changelist.record! { 
-      c.color = 'red'
-      c.save!
+      p.color = 'red'
+      p.save!
     }
 
     mydeb(cl[2].id)
 
-    cl[3] = Changelist.record! { u.pens << c }
+    cl[3] = Changelist.record! { w.pens << p }
 
     mydeb(cl[3].id)
 
     cl[4] = Changelist.record! { 
-      u.name = 'joel' 
-      u.save!
+      w.name = 'joel' 
+      w.save!
     }
 
     mydeb(cl[4].id)
 
     cl[5] = Changelist.record! {
-      c.color = 'blue'
-      c.save!
+      p.color = 'blue'
+      p.save!
     }
 
     mydeb(cl[5].id)
     cl[6] = Changelist.record! {
-      c2.color = 'black'
-      c2.save!
-      u.pens << c2
+      p2.color = 'black'
+      p2.save!
+      w.pens << p2
     }
 
     mydeb(cl[6].id)
     
-    u.pens.delete(c)
+    w.pens.delete(p)
 
     mydeb(7)
     #cl[7] = Changelist.record! { u.pens.delete(c) }
 
-    #mydeb(cl[7].id)
-    cl[8] = Changelist.record! { u.pens << c }
+    cl[8] = Changelist.record! { w.pens << p }
 
     mydeb(8)
   end

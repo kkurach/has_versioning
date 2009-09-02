@@ -676,8 +676,27 @@ module ActiveRecord::Associations
   end
   
   class HasManyThroughAssociation < HasManyAssociation
-    alias_method :find_target_orig, :find_target
+    
+    alias_method :delete_records_orig, :delete_records
+    def delete_records(records) 
+      unless @reflection.through_reflection.klass.new.acts_like?('svn')
+        return delete_records_orig(records) 
+      end
 
+      klass = @reflection.through_reflection.klass
+      records.each do |associate|
+        vec = klass.find(:all, :conditions => construct_join_attributes(associate))
+        # FIXME: I don't know why klass.destroy doesn't delete
+        # the object (but it correctly updates cl_destroy column in version)
+        vec.each { |x| 
+          klass.destroy(x); 
+          klass.delete(x) 
+        }
+      end
+
+    end
+
+    alias_method :find_target_orig, :find_target
     def find_target
       return find_target_orig unless @owner.acts_like?('svn')
 
@@ -698,10 +717,13 @@ module ActiveRecord::Associations
       vec.map { |elem| process_output(elem) }
     end
     
-#    alias_method :construct_joins_orig, :construct_joins
+    alias_method :construct_joins_orig, :construct_joins
     # scary stuff from ActiveRecord...
     #
     def construct_joins(custom_joins = nil)
+      unless @reflection.through_reflection.klass.new.acts_like?('svn')
+        return construct_joins_orig(custom_joins) 
+      end
 
       polymorphic_join = nil
       if @reflection.source_reflection.macro == :belongs_to
