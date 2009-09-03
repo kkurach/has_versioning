@@ -20,20 +20,8 @@ require File.dirname(__FILE__) + '/has_versioning_models'
 
 class HasManyThroughTests < Test::Unit::TestCase
 
-  def deb(obj, cl)
-    puts "obj.name (1 - karol 2 - nick) = #{obj.name}   cl = #{cl} \n\n"
-    obj.at_changelist(cl).pens.each { |x| pp x }
-    puts "--end of out--"
-  end
-  def deb2(obj, cl)
-    puts "obj.name (1 - karol 2 - nick) = #{obj.color}   cl = #{cl} \n\n"
-    obj.at_changelist(cl).writers.each { |x| pp x }
-    puts "--end of out--"
-  end
-
   def test_hmt_add_and_update
 
-    require 'pp'
     w1 = Writer.create(:name => 'karol')
     w2 = Writer.create(:name => 'nick' )
     p1 = Pen.create(:color => 'blue')
@@ -166,19 +154,25 @@ class HasManyThroughTests < Test::Unit::TestCase
     
   end
 
-  def test_has_many_through_count
+  def test_count
     cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
     assert_equal 1, w.at_changelist(cl[7]).pens.count
   end
 
-  def test_has_many_through_size
+  def test_size
     cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
     assert_equal 1, w.at_changelist(cl[7]).pens.size
   end
 
-  def test_has_many_through_first
+  def test_first
     cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
     assert_equal p2.at_changelist(cl[7]), w.at_changelist(cl[7]).pens.first
+  end
+
+  def test_empty
+    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+    assert_equal true, w.at_changelist(cl[2]).pens.empty?
+    assert_equal false, w.at_changelist(cl[4]).pens.empty?
   end
 end
 

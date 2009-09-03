@@ -677,6 +677,22 @@ module ActiveRecord::Associations
   
   class HasManyThroughAssociation < HasManyAssociation
     
+    alias_method :size_orig, :size
+    def size
+      return size_orig unless @owner.acts_like?('svn')
+      load_target
+      @target.to_ary.size
+    end
+    
+    
+    # FIXME: I'm slow.... :(
+    alias_method :count_orig, :count
+    def count
+      return count_orig unless @owner.acts_like?('svn')
+      size
+    end
+    
+
     alias_method :delete_records_orig, :delete_records
     def delete_records(records) 
       unless @reflection.through_reflection.klass.new.acts_like?('svn')
@@ -686,6 +702,7 @@ module ActiveRecord::Associations
       klass = @reflection.through_reflection.klass
       records.each do |associate|
         vec = klass.find(:all, :conditions => construct_join_attributes(associate))
+
         # FIXME: I don't know why klass.destroy doesn't delete
         # the object (but it correctly updates cl_destroy column in version)
         vec.each { |x| 
@@ -698,7 +715,9 @@ module ActiveRecord::Associations
 
     alias_method :find_target_orig, :find_target
     def find_target
-      return find_target_orig unless @owner.acts_like?('svn')
+      unless @reflection.through_reflection.klass.new.acts_like?('svn')
+        return delete_records_orig(records) 
+      end
 
       max_cl = ActiveRecord::HasVersioning::MAX_CL_NUMBER
       cl_num = @owner.cl_num || max_cl - 1
@@ -714,7 +733,6 @@ module ActiveRecord::Associations
                #{tab2}.cl_destroy > #{cl_num} "]
                 
       vec = nil
-      # TODO: why nested scope doesn't work?
       with_scope({ :find => { :conditions => cond }} ) do  
         vec = find_target_orig
       end
@@ -752,12 +770,11 @@ module ActiveRecord::Associations
 
       ret = "INNER JOIN %s ON %s.%s = %s.%s %s #{@reflection.options[:joins]} #{custom_joins}" % [
         @reflection.through_reflection.quoted_table_name,
-        @reflection.quoted_table_name, @owner.class.real_id, #reflection_primary_key,  FIXME
+        @reflection.quoted_table_name, @owner.class.real_id,  # my change here
         @reflection.through_reflection.quoted_table_name, source_primary_key,
         polymorphic_join
       ]
 
-      #puts "ret = #{ret}"
       ret
     end
   end
@@ -782,6 +799,25 @@ module ActiveRecord::Associations
     alias_method :find_orig, :find
     def find(*args)
       scope_to_cl { find_orig(*args) }
+    end
+    
+    # FIXME: I'm slow.... :(
+    alias_method :first_orig, :first
+    def first
+      return first_orig unless @owner.acts_like?('svn')
+      load_target
+      return nil unless @target
+      @target.to_ary[0]
+    end
+    
+    
+    # FIXME: I'm slow.... :(
+    alias_method :last_orig, :last
+    def last
+      return last_orig unless @owner.acts_like?('svn')
+      load_target
+      return nil unless @target
+      @target.to_ary[-1]
     end
 
     # FIXME:  nested with_scope doesn't work.
