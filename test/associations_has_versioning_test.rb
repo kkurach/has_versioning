@@ -79,7 +79,8 @@ class HasManyThroughTests < Test::Unit::TestCase
     puts "--------"
   end
   
-  def add_data_from_spreadsheet_many_to_many
+  def add_data_from_spreadsheet_has_many_through
+    Writer.delete_all; Pen.delete_all; PenWriter.delete_all
     w = Writer.new
     p = Pen.new
     p2 = Pen.new
@@ -139,7 +140,7 @@ class HasManyThroughTests < Test::Unit::TestCase
   end
 
   def test_main_from_spreadsheet_many_to_many
-    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+    cl,w,p,p2 = add_data_from_spreadsheet_has_many_through
     
     pen_cmp = Proc.new { |x,y| x.id <=> y.id }
 
@@ -154,25 +155,37 @@ class HasManyThroughTests < Test::Unit::TestCase
     
   end
 
-  def test_count
-    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+  def test_has_many_through_function_count
+    cl,w,p,p2 = add_data_from_spreadsheet_has_many_through
     assert_equal 1, w.at_changelist(cl[7]).pens.count
   end
 
-  def test_size
-    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+  def test_has_many_through_function_size
+    cl,w,p,p2 = add_data_from_spreadsheet_has_many_through
     assert_equal 1, w.at_changelist(cl[7]).pens.size
   end
 
-  def test_first
-    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+  def test_has_many_through_function_first
+    cl,w,p,p2 = add_data_from_spreadsheet_has_many_through
     assert_equal p2.at_changelist(cl[7]), w.at_changelist(cl[7]).pens.first
   end
 
-  def test_empty
-    cl,w,p,p2 = add_data_from_spreadsheet_many_to_many
+  def test_has_many_through_function_empty
+    cl,w,p,p2 = add_data_from_spreadsheet_has_many_through
     assert_equal true, w.at_changelist(cl[2]).pens.empty?
     assert_equal false, w.at_changelist(cl[4]).pens.empty?
+  end
+  
+  def test_has_many_through_function_find
+    cl,w,p,p2 = add_data_from_spreadsheet_has_many_through
+    
+    require 'pp'
+    puts "1:"
+    pp w.at_changelist(cl[6]).pens
+    puts "2:"
+    pp w.at_changelist(cl[6]).pens.find(:all)
+    assert_equal w.at_changelist(cl[6]).pens.find(:all,:conditions => { :color => 'blue' }),
+                 p.at_changelist(cl[6])
   end
 end
 
